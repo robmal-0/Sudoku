@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">Sudoku</string>
+    <string name="home">Home</string>
+    <string name="finished">Finished</string>
+    <string name="victory">Victory</string>
+    <string name="sudoku">Sudoku</string>
+    <string name="picker">Picker</string>
+    <string name="easy">Easy</string>
+    <string name="medium">Medium</string>
+    <string name="hard">Hard</string>
+    <string name="draft">Draft</string>
+    <string name="mainImage">
+        https://imgs.search.brave.com/zMz1kCDRoKxMXr6eI73MBByO3kIg4_Or7ATltE4eo2E/rs:fit:860:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvNTg5/NTYxODY0L3Bob3Rv/L3NvbHZpbmctc3Vk/b2t1LndlYnA_Yj0x/JnM9MTcwNjY3YSZ3/PTAmaz0yMCZjPTR2/eTlyM2NYdzNoZ0Vk/STdONWJkN0xSLS0x/azVUcXY0UjhVaWw4/SGhvQjQ9
+    </string>
+</resources>

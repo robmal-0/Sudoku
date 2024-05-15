@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "345440291809",
+    "project_id": "sudoku-232bd",
+    "storage_bucket": "sudoku-232bd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:345440291809:android:f5bd5c16df65c20a15e0a0",
+        "android_client_info": {
+          "package_name": "com.example.sudoku"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBXCrnBLkCI3QwSa6-AVoKLDF_ftsRt6IY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

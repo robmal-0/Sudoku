@@ -5,15 +5,18 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -55,44 +58,50 @@ fun GameBoard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
-                        .background(color = Color.Black)
+                        .border(
+                            2.dp,
+                            color = Color.Black,
+                            shape = RoundedCornerShape(size = 8.dp)
+                        )
                 ) {
-                    println(game.grid)
                     game.grid.forEachIndexed { y, row ->
-                        Row(modifier = Modifier.fillMaxWidth()) {
+                        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
                             row.forEachIndexed { x, cell ->
                                 val isSelected = sX == x && sY == y
                                 val valSelected = cell.value == selectedValue.value && selectedValue.value != 0
                                 val s = y / 3 * 3 + x / 3
                                 val affected = s == sS || x == sX || y == sY
+                                var mods = Modifier
+                                    .weight(1f)
+                                    .aspectRatio(1f)
+                                    .background(
+                                        if (isSelected) Color.hsl(0f, 0f, 0.60f)
+                                        else if (affected) Color.hsl(0f, 0f, 0.83f)
+                                        else if (valSelected) Color.hsl(0f, 0f, 0.73f)
+                                        else Color.White
+                                    )
+                                    .clickable {
+                                        selected.value = intArrayOf(x, y)
+                                    }
+                                if (isSelected || valSelected) {
+                                    mods = mods.border(
+                                        1.dp,
+                                        color =
+                                            if (isSelected) Color.Magenta
+                                            else Color.Blue,
+                                        shape = RoundedCornerShape(size = 4.dp),
+                                    )
+                                }
+
+
                                 Column(
                                     verticalArrangement = Arrangement.Center,
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .aspectRatio(1f)
-                                        .background(
-                                            if (isSelected) Color.hsl(0f, 0f, 0.60f)
-                                            else if (affected) Color.hsl(0f, 0f, 0.83f)
-                                            else if (valSelected) Color.hsl(0f, 0f, 0.73f)
-                                            else Color.White
-                                        )
-                                        .border(
-                                            1.dp,
-                                            color =
-                                            if (isSelected) Color.Magenta
-                                            else if (valSelected) Color.Blue
-                                            else Color.Black
-                                        )
-                                        .clickable {
-                                            selected.value = intArrayOf(x, y)
-                                        },
+                                    modifier = mods,
 
                                 ) {
                                     if (cell.value > 0) {
                                         val wrong = cell.value != cell.realValue
-                                        println(cell.realValue)
-                                        println(wrong)
                                         Text("${cell.value}", modifier = Modifier, fontSize = 32.sp, color = if (cell.given) Color.Black else if (wrong) Color.Red else Color.hsl(230f, 0.7f, 0.45f))
                                     } else if (cell.notes.isNotEmpty()){
                                         Column {
@@ -120,7 +129,15 @@ fun GameBoard(
                                     Spacer(
                                         modifier = Modifier
                                             .background(color = Color.Black)
+                                            .width(2.dp)
+                                            .fillMaxHeight()
+                                    )
+                                } else if(x < 8) {
+                                    Spacer(
+                                        modifier = Modifier
+                                            .background(color = Color.Black)
                                             .width(1.dp)
+                                            .fillMaxHeight()
                                     )
                                 }
 
@@ -130,7 +147,15 @@ fun GameBoard(
                             Spacer(
                                 modifier = Modifier
                                     .background(color = Color.Black)
+                                    .height(2.dp)
+                                    .fillMaxWidth()
+                            )
+                        } else if (y < 8) {
+                            Spacer(
+                                modifier = Modifier
+                                    .background(color = Color.Black)
                                     .height(1.dp)
+                                    .fillMaxWidth()
                             )
                         }
                     }

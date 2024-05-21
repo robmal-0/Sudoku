@@ -9,7 +9,7 @@ import retrofit2.http.Query
 const val BASE_URL = "https://sudoku-api.vercel.app/api/"
 
 data class Board (
-    val grids: List<Sudoku>
+    val grids: List<APISudoku>
 )
 
 data class NewBoard (

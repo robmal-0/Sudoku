@@ -1,5 +1,6 @@
 package com.example.sudoku
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,15 +33,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.sudoku.data.Cell
+import com.example.sudoku.data.Firestore
 import com.example.sudoku.ui.theme.SudokuViewModel
 
 @Composable
 fun GameBoard(
-    viewModel: SudokuViewModel
+    viewModel: SudokuViewModel,
+    navController: NavController,
+    db: Firestore
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val game = uiState.game
@@ -57,15 +66,16 @@ fun GameBoard(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(1f)
                         .border(
-                            2.dp,
+                            1.dp,
                             color = Color.Black,
                             shape = RoundedCornerShape(size = 8.dp)
                         )
                 ) {
                     game.grid.forEachIndexed { y, row ->
-                        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                        Row(modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min)) {
                             row.forEachIndexed { x, cell ->
                                 val isSelected = sX == x && sY == y
                                 val valSelected = cell.value == selectedValue.value && selectedValue.value != 0
@@ -110,9 +120,13 @@ fun GameBoard(
                                                     (0..2).forEach {col ->
                                                         val i = row * 3 + col+1
                                                         if (i in cell.notes) {
-                                                            Text("$i", modifier = Modifier.weight(1f).aspectRatio(1f), fontSize = 10.sp, textAlign = TextAlign.Center)
+                                                            Text("$i", modifier = Modifier
+                                                                .weight(1f)
+                                                                .aspectRatio(1f), fontSize = 10.sp, textAlign = TextAlign.Center)
                                                         } else {
-                                                            Text("", modifier = Modifier.weight(1f).aspectRatio(1f))
+                                                            Text("", modifier = Modifier
+                                                                .weight(1f)
+                                                                .aspectRatio(1f))
                                                         }
 
                                                     }
@@ -166,7 +180,7 @@ fun GameBoard(
                         .padding(3.dp)
                         .weight(1f)
                         .aspectRatio(1f)
-                        .border(1.dp, color = Color.Black)
+                        .border(1.dp, color = Color.Black, shape = RoundedCornerShape(5.dp))
                     val fontSize = if (takingNotes.value) 24.sp else 32.sp
 
                     val vertArr = arrayOf(
@@ -190,9 +204,11 @@ fun GameBoard(
                                         val vArr = vertArr[if (takingNotes.value) row else 1]
                                         val hAlign = horAlign[if (takingNotes.value) col else 1]
                                         val disabled = uiState.valueCount[i] >= 9 && !takingNotes.value
-                                        Column(modifier = buttonMods.background(if (disabled) Color.LightGray else Color.White).clickable(enabled = !disabled) {
-                                            viewModel.makeMove(i, sX, sY, takingNotes.value)
-                                        }, verticalArrangement = vArr, horizontalAlignment = hAlign) {
+                                        Column(modifier = buttonMods
+                                            .background(if (disabled) Color.LightGray else Color.White)
+                                            .clickable(enabled = !disabled) {
+                                                viewModel.makeMove(i, sX, sY, takingNotes.value)
+                                            }, verticalArrangement = vArr, horizontalAlignment = hAlign) {
                                             Text("$i", modifier = Modifier.padding(5.dp), fontSize = fontSize, textAlign = TextAlign.Center)
                                         }
                                     }
@@ -201,10 +217,18 @@ fun GameBoard(
                         }
                         Column(modifier = Modifier.weight(2f)) {
                             Row {
-                                Column(modifier = buttonMods.background(if (takingNotes.value) Color.hsl(210f, 0.4f, 0.8f) else Color.White).clickable {
-                                    takingNotes.value = !takingNotes.value
-                                }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Icon(imageVector = Icons.Filled.Edit, contentDescription = "Eraser")
+                                Column(modifier = buttonMods
+                                    .background(
+                                        if (takingNotes.value) Color.hsl(
+                                            210f,
+                                            0.4f,
+                                            0.8f
+                                        ) else Color.White
+                                    )
+                                    .clickable {
+                                        takingNotes.value = !takingNotes.value
+                                    }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(imageVector = Icons.Filled.Edit, contentDescription = "Notes")
                                 }
                                 Column(modifier = buttonMods.clickable {
                                     viewModel.makeMove(0, sX, sY)
@@ -212,51 +236,64 @@ fun GameBoard(
                                     Icon(imageVector = Icons.Filled.Delete, contentDescription = "Eraser")
                                 }
                             }
-                        }
-                    }
-                    /*Row {
-                        (1..3).forEach {
-                            Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("$it", fontSize = fontSize, textAlign = TextAlign.Center)
+                            Row {
+                                Column(modifier = buttonMods
+                                    .clickable {
+                                        viewModel.solveWithSolver()
+                                    }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Icon(imageVector = Icons.Filled.Person, contentDescription = "Solve with bot")
+                                }
+                                Column(modifier = buttonMods) {
+
+                                }
                             }
                         }
-                        Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("A", fontSize = fontSize, textAlign = TextAlign.Center)
-                        }
-                        Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("D", fontSize = fontSize, textAlign = TextAlign.Center)
-                        }
                     }
-                    Row {
-                        (4..6).forEach {
-                            Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("$it", fontSize = fontSize, textAlign = TextAlign.Center)
-                            }
-                        }
-                        Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("B", fontSize = fontSize, textAlign = TextAlign.Center)
-                        }
-                        Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("E", fontSize = fontSize, textAlign = TextAlign.Center)
-                        }
-                    }
-                    Row {
-                        (7..9).forEach {
-                            Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                                Text("$it", fontSize = fontSize, textAlign = TextAlign.Center)
-                            }
-                        }
-                        Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("C", fontSize = fontSize, textAlign = TextAlign.Center)
-                        }
-                        Column(modifier = buttonMods.clickable {  }, verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("F", fontSize = fontSize, textAlign = TextAlign.Center)
-                        }
-                    }*/
                 }
             }
         }
     } else {
         Text("Loading...")
+    }
+    if (uiState.gameWon) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth(fraction = 0.65f)
+                    .aspectRatio(0.66f)
+                    .background(Color.White, shape = RoundedCornerShape(10.dp))
+                    .border(1.dp, Color.Gray, shape = RoundedCornerShape(10.dp)),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("You won!", textAlign = TextAlign.Center, fontSize = 32.sp, modifier = Modifier.fillMaxWidth())
+                Image(painter = rememberAsyncImagePainter(model = stringResource(id = R.string.victoryImage)), contentDescription = "Victory image", modifier = Modifier.fillMaxWidth().aspectRatio(1.5f))
+                Button(onClick = {
+                    navController.navigate(SelectedScreen.Home.name)
+                }) {
+                    Text("Home")
+                }
+                if (uiState.testing) {
+                    Button(onClick = {
+                        viewModel.stopTesting()
+                        navController.navigate(SelectedScreen.Editor.name)
+                    }) {
+                        Text("Back to editor")
+                    }
+                    Button(onClick = {
+
+                    }) {
+                        Text("Publish")
+                    }
+                } else {
+                    Button(onClick = {
+                        viewModel.generateGameList(db)
+                        navController.navigate(SelectedScreen.Picker.name)
+                    }) {
+                        Text("New Game")
+                    }
+                }
+            }
+        }
     }
 }

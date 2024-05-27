@@ -1,5 +1,7 @@
 package com.example.sudoku
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -22,6 +24,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,14 +41,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.sudoku.data.Cell
+import com.example.sudoku.data.Firestore
+import com.example.sudoku.data.Sudoku
 import com.example.sudoku.ui.theme.SudokuViewModel
 import kotlinx.coroutines.DelicateCoroutinesApi
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(DelicateCoroutinesApi::class)
 @Composable
 fun BoardEditor(
     viewModel: SudokuViewModel,
-    navController: NavController
+    navController: NavController,
+    db: Firestore
 ) {
 
     val uiState by viewModel.uiState.collectAsState()
@@ -299,6 +307,33 @@ fun BoardEditor(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.Check,
+                                        contentDescription = "Test and Publish"
+                                    )
+                                }
+                            }
+                            Row {
+                                Column(
+                                    modifier = buttonMods
+                                        .clickable {
+                                            viewModel.generateNewNumbers()
+                                        },
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Refresh,
+                                        contentDescription = "Generate new numbers"
+                                    )
+                                }
+                                Column(
+                                    modifier = buttonMods.clickable {
+                                        db.publishGame(Sudoku.toNewGame(game))
+                                    },
+                                    verticalArrangement = Arrangement.Center,
+                                    horizontalAlignment = Alignment.CenterHorizontally
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Send,
                                         contentDescription = "Test and Publish"
                                     )
                                 }

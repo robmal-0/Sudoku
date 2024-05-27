@@ -12,7 +12,12 @@
           "package_name": "com.example.sudoku"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "345440291809-eaq4m9vtpj6buhsnt7cp8ac2bv6d5e93.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBXCrnBLkCI3QwSa6-AVoKLDF_ftsRt6IY"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "345440291809-eaq4m9vtpj6buhsnt7cp8ac2bv6d5e93.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

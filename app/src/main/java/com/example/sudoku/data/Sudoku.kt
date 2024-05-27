@@ -36,13 +36,14 @@ fun List<List<Int>>.generateRow(row: Int): List<Int> {
         res.add(i, 0)
     }
     val initialCandidates = candidates.toList()
-    while (true) {
+    var attempts = 3
+    while (attempts > 0) {
         try {
             while (res.count { i -> i == 0 } > 0) {
                 candidates.sortBy { c -> c.second.size }
                 val min = candidates[0]
                 candidates.removeFirst()
-                val candies = if (min.second.size < 4) {
+                val candies = if (min.second.size < row - 1) {
                     val rest = if (candidates.size > 0) candidates.reduce{ acc, pair -> Pair(0, pair.second + acc.second)}.second else arrayListOf()
                     (min.second - rest.toSet())
                 } else {
@@ -59,8 +60,13 @@ fun List<List<Int>>.generateRow(row: Int): List<Int> {
             }
             break
         } catch (e: Exception) {
+            attempts--
             candidates = initialCandidates.toMutableList()
         }
+    }
+
+    if (attempts == 0) {
+        throw Exception("Failed to generate row")
     }
 
     return res
@@ -80,17 +86,37 @@ data class Sudoku(
         fun generateSudoku(): Sudoku {
             val values = mutableListOf(
                 (1..9).shuffled(),
-                arrayListOf(0,0,0,0,0,0,0,0,0),
-                arrayListOf(0,0,0,0,0,0,0,0,0),
-                arrayListOf(0,0,0,0,0,0,0,0,0),
-                arrayListOf(0,0,0,0,0,0,0,0,0),
-                arrayListOf(0,0,0,0,0,0,0,0,0),
-                arrayListOf(0,0,0,0,0,0,0,0,0),
-                arrayListOf(0,0,0,0,0,0,0,0,0),
-                arrayListOf(0,0,0,0,0,0,0,0,0),
             )
-            (1..8).forEach { i -> values[i] = values.generateRow(i) }
+            (1..8).forEach { i -> values.add(i, arrayListOf(0,0,0,0,0,0,0,0,0)) }
+            var attempts = 5
+            while (attempts > 0) {
+                try {
+                    (1..8).forEach { i ->
+                        println(i)
+                        values[i] = values.generateRow(i)
+                        println(values[i])
+                    }
+                    break
+                } catch (e: Exception) {
+                    attempts--
+                    values[0] = (1..9).shuffled()
+                    (1..8).forEach { i -> values[i] = arrayListOf(0,0,0,0,0,0,0,0,0) }
+                }
+            }
 
+            if (attempts == 0) {
+                throw Exception("Failed to generate board")
+            }
+
+            return Sudoku (
+                difficulty = "Easy",
+                grid = values.map { row -> row.map { v -> Cell(value = v, given = false, realValue = v) } }
+            )
+        }
+
+        fun emptySudoku(): Sudoku {
+            val values = mutableListOf<List<Int>>()
+            (0..8).forEach { i -> values.add(i, arrayListOf(0,0,0,0,0,0,0,0,0)) }
             return Sudoku (
                 difficulty = "Easy",
                 grid = values.map { row -> row.map { v -> Cell(value = v, given = false, realValue = v) } }
@@ -176,7 +202,7 @@ data class Sudoku(
 
             val toRemove = mutableListOf<SolveCell>()
 
-            fun removeCandidates(value: Int, col: Int = -10, row: Int = -10) {
+            fun removeCandidates(value: Int, col: Int = 1000, row: Int = 1000) {
                 val c = candidates.grid.filter {cell ->
                     cell.row == row || cell.col == col || (cell.row / 3 * 3 + cell.col / 3 == row / 3 * 3 + col / 3)
                 }
@@ -186,14 +212,13 @@ data class Sudoku(
             }
 
             var skipHiddenPairs = false
+            var skipPointingPairs = false
 
             while (solved.any { row -> row.any { cell -> cell.value == 0 }}) {
                 // Single candidate
                 var foundSingleCandidate = false
                 candidates.grid.forEach { cell ->
                     if (cell.candidates.size == 1) {
-                        println("Found single candidate in cell:")
-                        println(cell)
                         toRemove.add(cell)
                         val value = cell.candidates[0]
                         solved[cell.row][cell.col] = solved[cell.row][cell.col].copy(
@@ -211,6 +236,7 @@ data class Sudoku(
                     candidates.grid -= toRemove.toSet()
                     toRemove.clear()
                     skipHiddenPairs = false
+                    skipPointingPairs = false
                     continue
                 }
 
@@ -226,9 +252,6 @@ data class Sudoku(
                             val value = i+1
                             val cell = list.find { cell -> value in cell.candidates }!!
 
-                            println("Found alone candidate in cell:")
-                            println(cell)
-                            println(list)
                             toRemove.add(cell)
                             solved[cell.row][cell.col] = solved[cell.row][cell.col].copy(
                                 value = value,
@@ -250,6 +273,42 @@ data class Sudoku(
                     candidates.grid -= toRemove.toSet()
                     toRemove.clear()
                     skipHiddenPairs = false
+                    skipPointingPairs = false
+                    continue
+                }
+
+                var foundPointingPair = false
+
+                val pointingPair = { list: List<SolveCell> ->
+                    val count = mutableListOf(0,0,0,0,0,0,0,0,0)
+                    (1..9).forEach {value ->
+                        count[value - 1] = list.count { cell -> value in cell.candidates }
+                    }
+                    count.forEachIndexed { i, v ->
+                        if (v == 2 || v == 3) {
+                            val value = i+1
+                            val cells = list.filter { cell -> value in cell.candidates }
+                            val col = cells[0].col
+                            val row = cells[0].row
+                            if (cells.all { c -> c.col == col }) {
+                                removeCandidates(value, col = col)
+                                cells.forEach { c -> c.candidates += value }
+                                foundPointingPair = true
+                            } else if(cells.all { c -> c.row == row }) {
+                                removeCandidates(value, row = row)
+                                cells.forEach { c -> c.candidates += value }
+                                foundPointingPair = true
+                            }
+                        }
+                    }
+
+                }
+                if (!skipPointingPairs)
+                    (0..8).forEach { box -> pointingPair(candidates.grid.filter { c -> c.row / 3 * 3 + c.col / 3 == box }) }
+
+                if (foundPointingPair) {
+                    difficulty = 2
+                    skipPointingPairs = true
                     continue
                 }
 
@@ -267,8 +326,6 @@ data class Sudoku(
                             val cells = list.filter { cell -> value in cell.candidates }
                             val pair = pairs.find { pair -> (pair.first - cells.toSet()).isEmpty()}
                             if (pair !== null) {
-                                println("Found hidden pair!!")
-                                println(pair.first)
                                 pairs.remove(pair)
                                 cells.forEach {cell ->
                                     cell.candidates.clear()
@@ -294,7 +351,6 @@ data class Sudoku(
 
                 if (foundHiddenPair) {
                     difficulty = 2
-                    toRemove.clear()
                     skipHiddenPairs = true
                     continue
                 }

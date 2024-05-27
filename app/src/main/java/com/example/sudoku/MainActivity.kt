@@ -1,8 +1,10 @@
 package com.example.sudoku
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.annotation.RequiresApi
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
@@ -27,11 +29,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -39,8 +43,18 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
+import com.example.sudoku.data.Firestore
 import com.example.sudoku.ui.theme.SudokuTheme
 import com.example.sudoku.ui.theme.SudokuViewModel
+import com.firebase.ui.auth.AuthUI
+import com.firebase.ui.auth.AuthUI.IdpConfig.EmailBuilder
+import com.firebase.ui.auth.FirebaseAuthUIActivityResultContract
+import com.google.firebase.Firebase
+import com.google.firebase.app
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.auth
+import com.google.firebase.firestore.firestore
+
 
 enum class SelectedScreen(@StringRes val title: Int) {
     Home(title = R.string.home),
@@ -48,12 +62,24 @@ enum class SelectedScreen(@StringRes val title: Int) {
     Game(title = R.string.sudoku),
     Picker(title = R.string.picker),
     Draft(title = R.string.draft),
-    Editor(title = R.string.editor)
+    Editor(title = R.string.editor),
+    Login(title = R.string.login)
 }
 
 class MainActivity : ComponentActivity() {
+    private lateinit var auth: FirebaseAuth
+    private lateinit var db: Firestore
+
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        auth = Firebase.auth
+        db = Firestore(Firebase.firestore, auth)
+        println("ON CREATE:")
+        println(Firebase.app)
+
+
         setContent {
             SudokuTheme {
                 // A surface container using the 'background' color from the theme
@@ -61,19 +87,39 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    App(modifier = Modifier.fillMaxSize())
+                    App(modifier = Modifier.fillMaxSize(), auth = auth, db = db)
                 }
             }
         }
     }
+
+    private val signInLauncher = registerForActivityResult(
+        FirebaseAuthUIActivityResultContract(),
+    ) {}
+
+    fun createSignInIntent() {
+        val providers = arrayListOf(
+            EmailBuilder()
+                .build()
+        )
+
+        val signInIntent = AuthUI.getInstance()
+            .createSignInIntentBuilder()
+            .setAvailableProviders(providers)
+            .build()
+        signInLauncher.launch(signInIntent)
+    }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App(
     modifier: Modifier = Modifier,
     viewModel: SudokuViewModel = viewModel(),
     navController: NavHostController = rememberNavController(),
+    auth: FirebaseAuth,
+    db: com.example.sudoku.data.Firestore
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -81,6 +127,12 @@ fun App(
     val currentScreen = SelectedScreen.valueOf(
         backStackEntry?.destination?.route ?: SelectedScreen.Home.name
     )
+
+    val signedIn = remember { mutableStateOf(false) }
+
+    auth.addAuthStateListener {
+        signedIn.value = auth.currentUser !== null
+    }
 
     Scaffold(
         topBar = {
@@ -92,7 +144,7 @@ fun App(
                     containerColor = Color.hsl(155f, 0.3f, 0.5f)
                 ),
                 navigationIcon = {
-                    if (currentScreen != SelectedScreen.Home) {
+                    if (currentScreen !in listOf(SelectedScreen.Home)) {
                         IconButton(onClick = {
                             if (currentScreen == SelectedScreen.Game && uiState.testing) {
                                 viewModel.stopTesting()
@@ -122,21 +174,36 @@ fun App(
                     Image(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(508f/339f),
+                            .aspectRatio(508f / 339f),
                         painter = rememberAsyncImagePainter(model = stringResource(R.string.mainImage)),
                         contentDescription = "Sudoku image"
                     )
 
                     Button(onClick = {
-                        viewModel.generateGameList()
+                        viewModel.generateGameList(db)
                         navController.navigate(SelectedScreen.Picker.name)
                     }) {
-                        Text("Play")
+                        Text(stringResource(id = R.string.play))
                     }
-                    Button(onClick = {
-                        navController.navigate(SelectedScreen.Draft.name)
-                    }) {
-                        Text("Create")
+                    if (signedIn.value) {
+                        Button(onClick = {
+                            navController.navigate(SelectedScreen.Draft.name)
+                        }) {
+                            Text(stringResource(id = R.string.create))
+                        }
+                        Text("Hello ${auth.currentUser!!.displayName}")
+                        Button(onClick = {
+                            auth.signOut()
+                        }) {
+                            Text(stringResource(id = R.string.logout))
+                        }
+                    } else {
+                        val activity = (LocalContext.current as MainActivity)
+                        Button(onClick = {
+                            activity.createSignInIntent()
+                        }) {
+                            Text(stringResource(id = R.string.login))
+                        }
                     }
                 }
             }
@@ -153,22 +220,15 @@ fun App(
                 )
             }
             composable(route = SelectedScreen.Game.name) {
-                GameBoard(viewModel = viewModel)
+                GameBoard(viewModel = viewModel, navController = navController, db = db)
             }
             composable(route = SelectedScreen.Editor.name) {
                 BoardEditor(
                     viewModel,
-                    navController
+                    navController,
+                    db = db
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun AppPreview() {
-    SudokuTheme {
-        App()
     }
 }

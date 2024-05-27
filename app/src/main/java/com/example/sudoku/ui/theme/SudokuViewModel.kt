@@ -2,8 +2,8 @@ package com.example.sudoku.ui.theme
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.sudoku.data.APIService
 import com.example.sudoku.data.Cell
+import com.example.sudoku.data.Firestore
 import com.example.sudoku.data.Sudoku
 import com.example.sudoku.data.UiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,7 +26,8 @@ class SudokuViewModel: ViewModel() {
                 state.copy(
                     game = game,
                     valueCount = valueCount,
-                    startedGames = if (game in state.startedGames) state.startedGames else state.startedGames + listOf(game)
+                    startedGames = if (game in state.startedGames) state.startedGames else state.startedGames + listOf(game),
+                    gameWon = false,
                 )
             }
         }
@@ -37,7 +38,8 @@ class SudokuViewModel: ViewModel() {
             _uiState.update {state ->
                 state.copy(
                     game = game,
-                    draftList = listOf(game) + state.draftList
+                    draftList = listOf(game) + state.draftList,
+                    gameWon = false,
                 )
             }
         }
@@ -48,7 +50,8 @@ class SudokuViewModel: ViewModel() {
             _uiState.update {state ->
                 state.copy(
                     game = Sudoku.toNewGame(game),
-                    testing = true
+                    testing = true,
+                    gameWon = false,
                 )
             }
         }
@@ -68,6 +71,30 @@ class SudokuViewModel: ViewModel() {
             _uiState.update {state ->
                 state.copy(
                     solver = Sudoku.solver(Sudoku.toNewGame(uiState.value.game!!))
+                )
+            }
+        }
+    }
+
+    fun generateNewNumbers() {
+        viewModelScope.launch {
+            val game = uiState.value.game!!
+            val newNumbers = Sudoku.generateSudoku()
+            val newGrid = newNumbers.grid.mapIndexed { y, row ->
+                row.mapIndexed { x, cell ->
+                    cell.copy(
+                        given = game.grid[y][x].given
+                    )
+                }
+            }
+            val newGame = newNumbers.copy(
+                grid = newGrid
+            )
+            _uiState.update { state ->
+                state.copy (
+                    game = newGame,
+                    draftList = listOf(newGame) + (state.draftList - game),
+                    solver = Sudoku.solver(Sudoku.toNewGame(newGame))
                 )
             }
         }
@@ -125,6 +152,19 @@ class SudokuViewModel: ViewModel() {
         }
     }
 
+    fun solveWithSolver() {
+        val game = uiState.value.game!!
+        viewModelScope.launch {
+            _uiState.update { state ->
+                state.copy (
+                    game = Sudoku.solver(game).copy(
+                        difficulty = game.difficulty
+                    )
+                )
+            }
+        }
+    }
+
     fun toggleGiven(x: Int, y: Int) {
         _uiState.update { state ->
             val game = state.game!!
@@ -144,12 +184,12 @@ class SudokuViewModel: ViewModel() {
         }
     }
 
-    fun generateGameList() {
+    fun generateGameList(db: Firestore) {
         viewModelScope.launch {
-            val games = APIService.getInstance().getSudoku(amount = 2)
+            val games = db.fetchGames()
             _uiState.update { state ->
                 state.copy(
-                    gameList = games.newboard.grids.map { Sudoku.fromApiSudoku(it) }
+                    gameList = games // .newboard.grids.map { Sudoku.fromApiSudoku(it) }
                 )
             }
         }

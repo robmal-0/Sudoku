@@ -10,7 +10,14 @@
     <string name="hard">Hard</string>
     <string name="draft">Draft</string>
     <string name="editor">Editor</string>
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="play">Play</string>
+    <string name="create">Create</string>
     <string name="mainImage">
         https://imgs.search.brave.com/zMz1kCDRoKxMXr6eI73MBByO3kIg4_Or7ATltE4eo2E/rs:fit:860:0:0/g:ce/aHR0cHM6Ly9tZWRp/YS5pc3RvY2twaG90/by5jb20vaWQvNTg5/NTYxODY0L3Bob3Rv/L3NvbHZpbmctc3Vk/b2t1LndlYnA_Yj0x/JnM9MTcwNjY3YSZ3/PTAmaz0yMCZjPTR2/eTlyM2NYdzNoZ0Vk/STdONWJkN0xSLS0x/azVUcXY0UjhVaWw4/SGhvQjQ9
+    </string>
+    <string name="victoryImage">
+        https://imgs.search.brave.com/b9wUK3QfzgsjZ1w2GFPHLkOVfbBZ6Wa1SRqdreG2A5A/rs:fit:860:0:0/g:ce/aHR0cHM6Ly9jbGlw/YXJ0bWFnLmNvbS9p/bWFnZXMvZmlyZXdv/cmtzLWNsaXBhcnQt/YmxhY2stYW5kLXdo/aXRlLTEuanBn
     </string>
 </resources>

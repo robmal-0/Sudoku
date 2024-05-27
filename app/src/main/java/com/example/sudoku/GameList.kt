@@ -1,5 +1,6 @@
 package com.example.sudoku
 
+import android.content.res.Configuration
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,11 +13,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.sudoku.ui.components.GamePreview
 import com.example.sudoku.ui.theme.SudokuViewModel
+
+enum class Orientation {
+    Landscape,
+    Portrait
+}
 
 @Composable
 fun GameList(
@@ -24,7 +31,18 @@ fun GameList(
     navController: NavController
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val cols: Int = 3
+
+    val configuration = LocalConfiguration.current
+
+    val orientation = when (configuration.orientation) {
+        Configuration.ORIENTATION_LANDSCAPE -> Orientation.Landscape
+        else -> Orientation.Portrait
+    }
+
+    val cols: Int = when (orientation) {
+        Orientation.Portrait -> 3
+        Orientation.Landscape -> 4
+    }
 
     Column(Modifier.padding(3.dp)) {
         Text("Continue game", fontSize = 32.sp)
